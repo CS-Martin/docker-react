@@ -1,10 +1,18 @@
-FROM node:lts-alpine as builder
+# First stage: build the application
+FROM node:lts-alpine AS builder
 WORKDIR '/app'
 COPY package.json .
 RUN npm install
 COPY . .
 RUN npm run build
 
-# Second stage
+# Second stage: run tests
+FROM node:lts-alpine AS tester
+WORKDIR /app
+COPY --from=builder /app ./
+RUN npm install
+CMD ["npm", "run", "test", "--", "--coverage"]
+
+# Third stage: serve the application
 FROM nginx
 COPY --from=builder /app/build /usr/share/nginx/html
